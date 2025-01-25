@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import dj_database_url
 load_dotenv()
 
 
@@ -78,16 +79,18 @@ WSGI_APPLICATION = 'image_processor.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-if os.getenv('ENV') == 'production':
+ENV = os.getenv('ENV', 'development')
+if ENV == 'production':
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.getenv('MYSQL_NAME'),
-            'USER': os.getenv('MYSQL_USER'),
-            'PASSWORD': os.getenv('MYSQL_PASSWORD'),
-            'HOST': os.getenv('MYSQL_HOST'),
-            'PORT': os.getenv('MYSQL_PORT'),
-        }
+        # 'default': {
+        #     'ENGINE': 'django.db.backends.mysql',
+        #     'NAME': os.getenv('MYSQL_NAME'),
+        #     'USER': os.getenv('MYSQL_USER'),
+        #     'PASSWORD': os.getenv('MYSQL_PASSWORD'),
+        #     'HOST': os.getenv('MYSQL_HOST'),
+        #     'PORT': os.getenv('MYSQL_PORT'),
+        # }
+        'default':dj_database_url.config(default=os.getenv('DATABASE_URL'))
     }
 else:
     DATABASES = {
@@ -139,10 +142,16 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CELERY_BROKER_URL = os.getenv('CELERY_URL')   # Celery broker URL
-CELERY_RESULT_BACKEND = os.getenv('CELERY_URL')  # Store task results in Redis
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')   # Celery broker URL
+CELERY_RESULT_BACKEND = os.getenv('REDIS_URL')  # Store task results in Redis
 
 # Ensure Celery serialization settings
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# Security
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'your-default-secret-key')
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'your-render-url.onrender.com').split(',')
+
