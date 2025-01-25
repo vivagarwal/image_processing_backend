@@ -20,7 +20,7 @@ class UploadCSV(APIView):
 
         unique_filename = f"{uuid.uuid4()}_{file.name}"
         fs = FileSystemStorage(location=UPLOAD_DIR)
-        file_path = fs.save(unique_filename, file)
+        fs.save(unique_filename, file)
 
         # Validate CSV
         is_valid, message = validate_csv(os.path.join(UPLOAD_DIR, unique_filename))

@@ -50,12 +50,18 @@ def process_images(self, product_image_id):
             logger.info(f"Response is: \n{response}\n")
             if response.status_code == 200:
                 img = Image.open(BytesIO(response.content))
-                output_filename = f"{product_image.product_name}_{uuid.uuid4()}"
+                val1 = uuid.uuid4()
+                output_filename = f"{product_image.product_name}_{val1}.jpg"
                 output_path = os.path.join(OUTPUT_DIR, output_filename)
-
                 # Compress and save the image
                 img.save(output_path, "JPEG", quality=50)
                 logger.info(f"Saved compressed image at: {output_path}")
+
+                output_filename1 = f"{product_image.product_name}_{val1}_1.jpg"
+                output_path1 = os.path.join(OUTPUT_DIR, output_filename1)
+                # Compress and save the image
+                img.save(output_path1, "JPEG")
+                logger.info(f"Saved original image at: {output_path1}")
 
                 # Simulate cloud upload (replace with actual cloud storage logic)
                 cloud_url = f"https://example.com/uploads/{output_filename}"
