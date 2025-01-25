@@ -31,9 +31,6 @@ SECRET_KEY = 'django-insecure-ogc#epd#(i9n=+9n*rcl9ey2$bhp3ozyx37!j46bg)=@#b!z+d
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -154,5 +151,7 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 # Security
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'your-default-secret-key')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'your-render-url.onrender.com').split(',')
 
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',')
+if '*' in ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ['*']  # Allow all hosts for local testing only

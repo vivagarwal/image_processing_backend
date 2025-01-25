@@ -1,5 +1,7 @@
 import uuid
 import os
+from django.http import HttpResponse
+
 import pandas as pd
 from django.core.files.storage import FileSystemStorage
 from rest_framework.views import APIView
@@ -46,3 +48,8 @@ class UploadCSV(APIView):
         # task = process_images.delay(image_url)  # Asynchronous execution
 
         return Response({"request_id": request_id, "message": "File uploaded successfully"}, status=status.HTTP_201_CREATED)
+
+def hello(request):
+    if request.method == "GET":
+        return HttpResponse("Hello World")
+    return HttpResponse("Method not allowed", status=405)
