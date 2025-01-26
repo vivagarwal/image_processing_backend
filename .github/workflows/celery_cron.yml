@@ -1,6 +1,9 @@
 name: Celery Task Runner
 
 on:
+  push:
+    branches:
+      - main  # Runs when pushing to the main branch
   schedule:
     - cron: '*/1 * * * *'  # Runs every minute (minimum allowed by GitHub)
   workflow_dispatch:  # Allows manual trigger from GitHub UI
