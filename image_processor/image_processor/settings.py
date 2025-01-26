@@ -166,6 +166,17 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'visibility_timeout': 3600,  # Task visibility timeout (seconds)
+    'retry_policy': {
+        'timeout': 30.0  # Retry timeout in seconds
+    },
+    'socket_connect_timeout': 10.0,
+    'socket_keepalive': True,
+    'socket_timeout': 20.0,
+    'health_check_interval': 30  # Keep connection alive by sending ping
+}
+
 # Security
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'your-default-secret-key')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
