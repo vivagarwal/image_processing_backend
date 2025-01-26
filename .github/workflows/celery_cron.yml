@@ -26,6 +26,7 @@ jobs:
         env:
             REDIS_URL: ${{ secrets.REDIS_URL }}
             TMP_OUTPUT_PATH: ${{ secrets.TMP_OUTPUT_PATH }}
+            CELERY_BROKER_URL: ${{ secrets.REDIS_URL }}
         run: |
           cd image_processor
           celery -A image_processor worker --loglevel=info --concurrency=1
