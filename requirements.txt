@@ -17,3 +17,5 @@ drf-yasg
 watchdog
 requests
 validators
+boto3
+django-storages
