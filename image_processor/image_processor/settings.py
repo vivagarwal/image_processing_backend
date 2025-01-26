@@ -194,3 +194,15 @@ logger.info(f"Using database: {DATABASES['default']['ENGINE']}")
 logger.info(f"Database name: {DATABASES['default']['NAME']}")
 logger.info(f"Database user: {DATABASES['default'].get('USER', 'N/A')}")
 logger.info(f"Database host: {DATABASES['default'].get('HOST', 'N/A')}")
+
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+AWS_REGION = os.getenv('AWS_REGION')
+
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com"
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}

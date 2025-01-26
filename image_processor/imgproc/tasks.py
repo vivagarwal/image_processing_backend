@@ -7,22 +7,42 @@ from django.conf import settings
 from .models import ImageProcessorUpload
 import logging
 import uuid
+import boto3
+from botocore.exceptions import NoCredentialsError
 
 logger = logging.getLogger(__name__)
 
 # Use absolute path to ensure images are stored correctly
 OUTPUT_DIR = os.path.join(os.getenv('TMP_OUTPUT_PATH'), 'processed_images')
 
+# Function to upload file to S3
+def upload_to_s3(file_path, s3_filename):
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+    )
+    bucket_name = os.getenv('AWS_STORAGE_BUCKET_NAME')
+
+    try:
+        s3.upload_file(file_path, bucket_name, s3_filename)  # Removed ACL
+        s3_url = f"https://{bucket_name}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/{s3_filename}"
+        return s3_url
+    except NoCredentialsError:
+        logger.error("AWS credentials not found.")
+        return None
+    except Exception as e:
+        logger.error(f"Error uploading file to S3: {e}")
+        return None
+
 @shared_task(bind=True)
 def process_images(self, product_image_id):
-    # Log current working directory for debugging
     logger.info(f"Current working directory: {os.getcwd()}")
     logger.info(f"Expected output directory: {os.path.abspath(OUTPUT_DIR)}")
 
     # Ensure the output directory exists
     if not os.path.exists(OUTPUT_DIR):
         try:
-            logger.info(f"Creating directory: {OUTPUT_DIR}")
             os.makedirs(OUTPUT_DIR, exist_ok=True)
             logger.info(f"Successfully created directory: {OUTPUT_DIR}")
         except Exception as e:
@@ -47,27 +67,28 @@ def process_images(self, product_image_id):
             logger.info(f"Downloading image: {clean_url}")
 
             response = requests.get(clean_url, stream=True)
-            logger.info(f"Response is: \n{response}\n")
             if response.status_code == 200:
                 img = Image.open(BytesIO(response.content))
                 val1 = uuid.uuid4()
+
                 output_filename = f"{product_image.product_name}_{val1}.jpg"
                 output_path = os.path.join(OUTPUT_DIR, output_filename)
+
                 # Compress and save the image
                 img.save(output_path, "JPEG", quality=50)
                 logger.info(f"Saved compressed image at: {output_path}")
 
-                output_filename1 = f"{product_image.product_name}_{val1}_1.jpg"
-                output_path1 = os.path.join(OUTPUT_DIR, output_filename1)
-                # Compress and save the image
-                img.save(output_path1, "JPEG")
-                logger.info(f"Saved original image at: {output_path1}")
+                # Upload to S3
+                s3_url = upload_to_s3(output_path, output_filename)
+                if s3_url:
+                    logger.info(f"Uploaded to S3: {s3_url}")
+                    output_urls.append(s3_url)
 
-                # Simulate cloud upload (replace with actual cloud storage logic)
-                cloud_url = f"https://example.com/uploads/{output_filename}"
-                logger.info(f"Saved example url is: {cloud_url}")
-                output_urls.append(cloud_url)
-
+                    # Delete the local compressed file after successful upload
+                    os.remove(output_path)
+                    logger.info(f"Deleted local compressed image: {output_path}")
+                else:
+                    logger.error(f"Failed to upload image to S3: {output_filename}")
             else:
                 logger.error(f"Failed to download image {clean_url}, HTTP status code: {response.status_code}")
 
@@ -79,10 +100,3 @@ def process_images(self, product_image_id):
     product_image.save()
 
     logger.info(f"Image processing completed for ID: {product_image_id}")
-
-
-# @shared_task
-# def process_image(image_url):
-#     """ Simulate processing an image """
-#     time.sleep(5)  # Simulating processing time
-#     return f"Processed image: {image_url}"

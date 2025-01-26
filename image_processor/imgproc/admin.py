@@ -1,7 +1,6 @@
 from django.contrib import admin
+from .models import ImageProcessorRequest, ImageProcessorUpload
 
-# Register your models here.
-from django.contrib import admin
-from .models import ImageProcessorRequest
-
+# Register both models
 admin.site.register(ImageProcessorRequest)
+admin.site.register(ImageProcessorUpload)
