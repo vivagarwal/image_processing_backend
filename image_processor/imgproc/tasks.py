@@ -9,6 +9,7 @@ import logging
 import uuid
 import boto3
 from botocore.exceptions import NoCredentialsError
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +55,12 @@ def process_images(self, product_image_id):
     logger.info(f"Processing image with ID: {product_image_id}")
     try:
         product_image = ImageProcessorUpload.objects.get(id=product_image_id)
+        product_image.image_processor_request.status = 'processing'
+        product_image.image_processor_request.save()
     except ImageProcessorUpload.DoesNotExist:
         logger.error(f"Product image with ID {product_image_id} does not exist.")
+        product_image.image_processor_request.status = 'pending'
+        product_image.image_processor_request.save()
         return
 
     input_urls = product_image.input_image_urls.split(',')
@@ -97,6 +102,13 @@ def process_images(self, product_image_id):
 
     # Update processed image URLs in the database
     product_image.output_image_urls = ",".join(output_urls)
+    product_image.processed_at = timezone.now()
     product_image.save()
+
+    # Update the status of the related ImageProcessorRequest
+    if product_image.image_processor_request:
+        product_image.image_processor_request.status = 'completed'
+        product_image.image_processor_request.save()
+        logger.info(f"Updated processing status to 'completed' for request ID: {product_image.image_processor_request.request_id}")
 
     logger.info(f"Image processing completed for ID: {product_image_id}")

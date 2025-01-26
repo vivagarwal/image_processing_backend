@@ -1,0 +1,54 @@
+<html>
+<head>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 18px;
+            text-align: left;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<h2>Processed Image Details</h2>
+<table>
+    <thead>
+    <tr>
+        <th>S.No.</th>
+        <th>Product Name</th>
+        <th>Input Image URLs</th>
+        <th>Output Image URLs</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for upload in uploads %}
+    <tr>
+        <td>{{ upload.serial_number }}</td>
+        <td>{{ upload.product_name }}</td>
+        <td>{{ upload.input_image_urls }}</td>
+        <td>
+            {% for url in upload.output_image_urls_list %}
+            <a href="{{ url }}" target="_blank">{{ url }}</a>{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</body>
+</html>
