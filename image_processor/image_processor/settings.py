@@ -89,13 +89,15 @@ if ENV == 'production':
         # }
         'default':dj_database_url.config(default=os.getenv('DATABASE_URL'))
     }
+    print("prod mode", "\n\n------\n")
 else:
     DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+    print("dev mode", "\n\n------\n")
 
 LOGGING = {
     'version': 1,
@@ -158,24 +160,13 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')   # Celery broker URL
-CELERY_RESULT_BACKEND = os.getenv('REDIS_URL')  # Store task results in Redis
+CELERY_BROKER_URL = f"redis://{os.getenv('REDIS_USERNAME')}:{os.getenv('REDIS_PASSWORD')}@{os.getenv('REDIS_HOST')}:{os.getenv('REDIS_PORT')}/0"
+CELERY_RESULT_BACKEND = f"redis://{os.getenv('REDIS_USERNAME')}:{os.getenv('REDIS_PASSWORD')}@{os.getenv('REDIS_HOST')}:{os.getenv('REDIS_PORT')}/0"
 
 # Ensure Celery serialization settings
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-
-CELERY_BROKER_TRANSPORT_OPTIONS = {
-    'visibility_timeout': 3600,  # Task visibility timeout (seconds)
-    'retry_policy': {
-        'timeout': 30.0  # Retry timeout in seconds
-    },
-    'socket_connect_timeout': 10.0,
-    'socket_keepalive': True,
-    'socket_timeout': 20.0,
-    'health_check_interval': 30  # Keep connection alive by sending ping
-}
 
 # Security
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'your-default-secret-key')
@@ -191,7 +182,6 @@ if '*' in ALLOWED_HOSTS:
 import logging
 
 logger = logging.getLogger(__name__)
-
 logger.info(f"Using database: {DATABASES['default']['ENGINE']}")
 logger.info(f"Database name: {DATABASES['default']['NAME']}")
 logger.info(f"Database user: {DATABASES['default'].get('USER', 'N/A')}")
