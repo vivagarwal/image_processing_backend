@@ -6,7 +6,7 @@ class ImageProcessorRequest(models.Model):
     file_name = models.CharField(max_length=255)
     status = models.CharField(
         max_length=20,
-        choices=[('pending', 'Pending'), ('processing', 'Processing'), ('completed', 'Completed')],
+        choices=[('pending', 'Pending'), ('processing', 'Processing'), ('completed', 'Completed'), ('failed', 'Failed')],
         default="pending"
     )
     created_at = models.DateTimeField(auto_now_add=True)

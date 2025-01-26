@@ -23,7 +23,8 @@ def upload_to_s3(file_path, s3_filename):
         aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
         aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
     )
-    bucket_name = os.getenv('AWS_STORAGE_BUCKET_NAME')
+    # bucket_name = os.getenv('AWS_STORAGE_BUCKET_NAME')
+    bucket_name = None
 
     try:
         s3.upload_file(file_path, bucket_name, s3_filename)  # Removed ACL
@@ -41,6 +42,7 @@ def process_images(self, product_image_id):
     logger.info(f"Current working directory: {os.getcwd()}")
     logger.info(f"Expected output directory: {os.path.abspath(OUTPUT_DIR)}")
 
+    failed_flag = False
     # Ensure the output directory exists
     if not os.path.exists(OUTPUT_DIR):
         try:
@@ -59,7 +61,8 @@ def process_images(self, product_image_id):
         product_image.image_processor_request.save()
     except ImageProcessorUpload.DoesNotExist:
         logger.error(f"Product image with ID {product_image_id} does not exist.")
-        product_image.image_processor_request.status = 'pending'
+        product_image.image_processor_request.status = 'failed'
+        failed_flag = True
         product_image.image_processor_request.save()
         return
 
@@ -94,11 +97,20 @@ def process_images(self, product_image_id):
                     logger.info(f"Deleted local compressed image: {output_path}")
                 else:
                     logger.error(f"Failed to upload image to S3: {output_filename}")
+                    product_image.image_processor_request.status = 'failed'
+                    failed_flag = True
+                    product_image.image_processor_request.save()
             else:
                 logger.error(f"Failed to download image {clean_url}, HTTP status code: {response.status_code}")
+                product_image.image_processor_request.status = 'failed'
+                failed_flag = True
+                product_image.image_processor_request.save()
 
         except Exception as e:
             logger.error(f"Error processing image {clean_url}: {e}")
+            product_image.image_processor_request.status = 'failed'
+            failed_flag = True
+            product_image.image_processor_request.save()
 
     # Update processed image URLs in the database
     product_image.output_image_urls = ",".join(output_urls)
@@ -106,7 +118,7 @@ def process_images(self, product_image_id):
     product_image.save()
 
     # Update the status of the related ImageProcessorRequest
-    if product_image.image_processor_request:
+    if product_image.image_processor_request and not failed_flag:
         product_image.image_processor_request.status = 'completed'
         product_image.image_processor_request.save()
         logger.info(f"Updated processing status to 'completed' for request ID: {product_image.image_processor_request.request_id}")

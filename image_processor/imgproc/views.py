@@ -67,7 +67,7 @@ def check_db_connection(request):
 def get_request_status(request, request_id):
     image_request = get_object_or_404(ImageProcessorRequest, request_id=request_id)
 
-    if image_request.status in ['pending', 'processing']:
+    if image_request.status in ['pending', 'processing', 'failed']:
         return JsonResponse({'status': image_request.status})
 
     elif image_request.status == 'completed':
