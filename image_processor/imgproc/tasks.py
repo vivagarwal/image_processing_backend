@@ -65,6 +65,7 @@ def process_images(self, product_image_id):
 
                 # Simulate cloud upload (replace with actual cloud storage logic)
                 cloud_url = f"https://example.com/uploads/{output_filename}"
+                logger.info(f"Saved example url is: {cloud_url}")
                 output_urls.append(cloud_url)
 
             else:
