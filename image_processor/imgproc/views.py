@@ -11,6 +11,9 @@ from .models import ImageProcessorRequest,ImageProcessorUpload
 from .utils import validate_csv
 # from .tasks import process_images
 
+from django.db import connection
+from django.http import JsonResponse
+
 UPLOAD_DIR = os.path.join(os.getenv('TMP_OUTPUT_PATH'),'uploads')
 
 class UploadCSV(APIView):
@@ -53,3 +56,9 @@ def hello(request):
     if request.method == "GET":
         return HttpResponse("Hello World")
     return HttpResponse("Method not allowed", status=405)
+
+def check_db_connection(request):
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT 1")
+        row = cursor.fetchone()
+    return JsonResponse({'db_status': 'connected' if row else 'error'})

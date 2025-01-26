@@ -97,6 +97,24 @@ else:
     }
 }
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -155,3 +173,15 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',')
 if '*' in ALLOWED_HOSTS:
     ALLOWED_HOSTS = ['*']  # Allow all hosts for local testing only
+
+
+
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+logger.info(f"Using database: {DATABASES['default']['ENGINE']}")
+logger.info(f"Database name: {DATABASES['default']['NAME']}")
+logger.info(f"Database user: {DATABASES['default'].get('USER', 'N/A')}")
+logger.info(f"Database host: {DATABASES['default'].get('HOST', 'N/A')}")
