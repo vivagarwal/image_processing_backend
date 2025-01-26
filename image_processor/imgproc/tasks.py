@@ -23,8 +23,7 @@ def upload_to_s3(file_path, s3_filename):
         aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
         aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
     )
-    # bucket_name = os.getenv('AWS_STORAGE_BUCKET_NAME')
-    bucket_name = None
+    bucket_name = os.getenv('AWS_STORAGE_BUCKET_NAME')
 
     try:
         s3.upload_file(file_path, bucket_name, s3_filename)  # Removed ACL
