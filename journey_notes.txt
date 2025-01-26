@@ -1,0 +1,13 @@
+files name unique for temp csv , also image output name, fo if users give same name it was not working
+
+allowed host issue
+
+redis bg worker
+
+celery bg worker
+    changed command from
+    cd image_processor && gunicorn image_processor.wsgi:application && celery -A image_processor worker --loglevel=info
+    to
+    cd image_processor && gunicorn image_processor.wsgi:application && celery -A image_processor.celery worker --loglevel=info
+
+

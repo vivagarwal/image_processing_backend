@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import ImageProcessorRequest,ImageProcessorUpload
 from .utils import validate_csv
-from .tasks import process_images
+# from .tasks import process_images
 
 UPLOAD_DIR = os.path.join(os.getenv('TMP_OUTPUT_PATH'),'uploads')
 
@@ -33,19 +33,19 @@ class UploadCSV(APIView):
         request_id = uuid.uuid4()
         processing_request = ImageProcessorRequest.objects.create(request_id=request_id, file_name=unique_filename, status="processing")
 
-        # Read CSV and save data to database
-        df = pd.read_csv(os.path.join(UPLOAD_DIR, unique_filename))
-        for index, row in df.iterrows():
-            product_image = ImageProcessorUpload.objects.create(
-                image_processor_request=processing_request,
-                serial_number=row['S.No.'],
-                product_name=row['Product Name'],
-                input_image_urls=row['Input Image Urls'],
-            )
-            print(row['Input Image Urls'])
-            process_images.delay(product_image.id)
-        # image_url = "https://example.com/image.jpg"
-        # task = process_images.delay(image_url)  # Asynchronous execution
+        # # Read CSV and save data to database
+        # df = pd.read_csv(os.path.join(UPLOAD_DIR, unique_filename))
+        # for index, row in df.iterrows():
+        #     product_image = ImageProcessorUpload.objects.create(
+        #         image_processor_request=processing_request,
+        #         serial_number=row['S.No.'],
+        #         product_name=row['Product Name'],
+        #         input_image_urls=row['Input Image Urls'],
+        #     )
+        #     print(row['Input Image Urls'])
+        #     process_images.delay(product_image.id)
+        # # image_url = "https://example.com/image.jpg"
+        # # task = process_images.delay(image_url)  # Asynchronous execution
 
         return Response({"request_id": request_id, "message": "File uploaded successfully"}, status=status.HTTP_201_CREATED)
 
