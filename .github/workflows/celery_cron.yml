@@ -5,6 +5,10 @@ on:
     - cron: '*/1 * * * *'  # Runs every minute (minimum allowed by GitHub)
   workflow_dispatch:  # Allows manual trigger from GitHub UI
 
+concurrency:
+  group: celery-worker-group
+  cancel-in-progress: true
+
 jobs:
   run-celery-task:
     runs-on: ubuntu-latest
