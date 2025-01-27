@@ -3,8 +3,7 @@ import requests
 from io import BytesIO
 from PIL import Image
 from celery import shared_task
-from django.conf import settings
-from .models import ImageProcessorUpload
+from .models import ImageProcessorUpload,ImageProcessorRequest
 import logging
 import uuid
 import boto3
@@ -37,7 +36,7 @@ def upload_to_s3(file_path, s3_filename):
         return None
 
 @shared_task(bind=True)
-def process_images(self, product_image_id):
+def process_images(self, request_id):
     logger.info(f"Current working directory: {os.getcwd()}")
     logger.info(f"Expected output directory: {os.path.abspath(OUTPUT_DIR)}")
 
@@ -53,73 +52,67 @@ def process_images(self, product_image_id):
         logger.info(f"Directory already exists: {OUTPUT_DIR}")
 
     # Fetch the product image record
-    logger.info(f"Processing image with ID: {product_image_id}")
+    logger.info(f"Processing image with request ID: {request_id}")
     try:
-        product_image = ImageProcessorUpload.objects.get(id=product_image_id)
-        product_image.image_processor_request.status = 'processing'
-        product_image.image_processor_request.save()
-    except ImageProcessorUpload.DoesNotExist:
-        logger.error(f"Product image with ID {product_image_id} does not exist.")
-        product_image.image_processor_request.status = 'failed'
-        failed_flag = True
-        product_image.image_processor_request.save()
+        image_request = ImageProcessorRequest.objects.get(request_id=request_id)
+        product_images = ImageProcessorUpload.objects.filter(image_processor_request=image_request)
+        image_request.status = 'processing'
+        image_request.save()
+    except ImageProcessorRequest.DoesNotExist:
+        logger.error(f"Request with ID {request_id} does not exist.")
         return
 
-    input_urls = product_image.input_image_urls.split(',')
-    output_urls = []
+    for product_image in product_images:
 
-    for url in input_urls:
-        try:
-            clean_url = url.strip()
-            logger.info(f"Downloading image: {clean_url}")
+        input_urls = product_image.input_image_urls.split(',')
+        output_urls = []
 
-            response = requests.get(clean_url, stream=True)
-            if response.status_code == 200:
-                img = Image.open(BytesIO(response.content))
-                val1 = uuid.uuid4()
+        for url in input_urls:
+            try:
+                clean_url = url.strip()
+                logger.info(f"Downloading image: {clean_url}")
 
-                output_filename = f"{product_image.product_name}_{val1}.jpg"
-                output_path = os.path.join(OUTPUT_DIR, output_filename)
+                response = requests.get(clean_url, stream=True)
+                if response.status_code == 200:
+                    img = Image.open(BytesIO(response.content))
+                    val1 = uuid.uuid4()
 
-                # Compress and save the image
-                img.save(output_path, "JPEG", quality=50)
-                logger.info(f"Saved compressed image at: {output_path}")
+                    output_filename = f"{product_image.product_name}_{val1}.jpg"
+                    output_path = os.path.join(OUTPUT_DIR, output_filename)
 
-                # Upload to S3
-                s3_url = upload_to_s3(output_path, output_filename)
-                if s3_url:
-                    logger.info(f"Uploaded to S3: {s3_url}")
-                    output_urls.append(s3_url)
+                    # Compress and save the image
+                    img.save(output_path, "JPEG", quality=50)
+                    logger.info(f"Saved compressed image at: {output_path}")
 
-                    # Delete the local compressed file after successful upload
-                    os.remove(output_path)
-                    logger.info(f"Deleted local compressed image: {output_path}")
+                    # Upload to S3
+                    s3_url = upload_to_s3(output_path, output_filename)
+                    if s3_url:
+                        logger.info(f"Uploaded to S3: {s3_url}")
+                        output_urls.append(s3_url)
+
+                        # Delete the local compressed file after successful upload
+                        os.remove(output_path)
+                        logger.info(f"Deleted local compressed image: {output_path}")
+                    else:
+                        logger.error(f"Failed to upload image to S3: {output_filename}")
+                        failed_flag = True
                 else:
-                    logger.error(f"Failed to upload image to S3: {output_filename}")
-                    product_image.image_processor_request.status = 'failed'
+                    logger.error(f"Failed to download image {clean_url}, HTTP status code: {response.status_code}")
                     failed_flag = True
-                    product_image.image_processor_request.save()
-            else:
-                logger.error(f"Failed to download image {clean_url}, HTTP status code: {response.status_code}")
-                product_image.image_processor_request.status = 'failed'
+
+            except Exception as e:
+                logger.error(f"Error processing image {clean_url}: {e}")
                 failed_flag = True
-                product_image.image_processor_request.save()
 
-        except Exception as e:
-            logger.error(f"Error processing image {clean_url}: {e}")
-            product_image.image_processor_request.status = 'failed'
-            failed_flag = True
-            product_image.image_processor_request.save()
-
-    # Update processed image URLs in the database
-    product_image.output_image_urls = ",".join(output_urls)
-    product_image.processed_at = timezone.now()
-    product_image.save()
+        # Update processed image URLs in the database
+        product_image.output_image_urls = ",".join(output_urls)
+        product_image.processed_at = timezone.now()
+        product_image.save()
 
     # Update the status of the related ImageProcessorRequest
-    if product_image.image_processor_request and not failed_flag:
-        product_image.image_processor_request.status = 'completed'
-        product_image.image_processor_request.save()
-        logger.info(f"Updated processing status to 'completed' for request ID: {product_image.image_processor_request.request_id}")
-
-    logger.info(f"Image processing completed for ID: {product_image_id}")
+    if failed_flag:
+        image_request.status = 'failed'
+    else:
+        image_request.status = 'completed'
+    image_request.save()
+    logger.info(f"Image processing completed for ID: {request_id}")

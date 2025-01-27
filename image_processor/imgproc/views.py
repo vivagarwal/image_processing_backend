@@ -47,7 +47,7 @@ class UploadCSV(APIView):
                 input_image_urls=row['Input Image Urls'],
             )
             print(row['Input Image Urls'])
-            process_images.delay(product_image.id)
+            process_images.delay(processing_request.request_id)
         # image_url = "https://example.com/image.jpg"
         # task = process_images.delay(image_url)  # Asynchronous execution
 
