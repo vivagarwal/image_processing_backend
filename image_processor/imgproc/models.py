@@ -10,6 +10,7 @@ class ImageProcessorRequest(models.Model):
         default="pending"
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    webhook_url = models.URLField(blank=True,null=True)
 
     def __str__(self):
         return f"{self.request_id} - {self.status}"

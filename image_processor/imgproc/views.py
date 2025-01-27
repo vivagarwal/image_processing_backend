@@ -20,6 +20,7 @@ UPLOAD_DIR = os.path.join(os.getenv('TMP_OUTPUT_PATH'),'uploads')
 class UploadCSV(APIView):
     def post(self,request,*args,**kwargs):
         file = request.FILES.get('file')
+        webhook_url = request.data.get('webhook_url', None)
 
         if not file or not file.name.endswith('.csv'):
             return Response({"error": "Invalid file format. Please upload a CSV."}, status=status.HTTP_400_BAD_REQUEST)
@@ -35,7 +36,7 @@ class UploadCSV(APIView):
 
         # Create a new processing request
         request_id = uuid.uuid4()
-        processing_request = ImageProcessorRequest.objects.create(request_id=request_id, file_name=unique_filename, status="pending")
+        processing_request = ImageProcessorRequest.objects.create(request_id=request_id, file_name=unique_filename, status="pending",webhook_url=webhook_url)
 
         # Read CSV and save data to database
         df = pd.read_csv(os.path.join(UPLOAD_DIR, unique_filename))
@@ -47,7 +48,7 @@ class UploadCSV(APIView):
                 input_image_urls=row['Input Image Urls'],
             )
             print(row['Input Image Urls'])
-            process_images.delay(processing_request.request_id)
+        process_images.delay(processing_request.request_id)
         # image_url = "https://example.com/image.jpg"
         # task = process_images.delay(image_url)  # Asynchronous execution
 

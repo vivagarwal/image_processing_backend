@@ -211,7 +211,7 @@ AWS_S3_OBJECT_PARAMETERS = {
 }
 
 #cors setting here:
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
 CORS_ALLOWED_ORIGINS = [
     FRONTEND_URL,  # Allow frontend to access backend
 ]

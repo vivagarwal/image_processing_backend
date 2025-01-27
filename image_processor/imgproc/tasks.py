@@ -9,6 +9,7 @@ import uuid
 import boto3
 from botocore.exceptions import NoCredentialsError
 from django.utils import timezone
+from django.template.loader import render_to_string
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,14 @@ def upload_to_s3(file_path, s3_filename):
     except Exception as e:
         logger.error(f"Error uploading file to S3: {e}")
         return None
+
+def send_webhook_notification(webhook_url, data):
+    try:
+        response = requests.post(webhook_url, json=data, timeout=10)
+        response.raise_for_status()
+        logger.info(f"Webhook sent successfully: {response.status_code}")
+    except requests.RequestException as e:
+        logger.error(f"Failed to send webhook: {e}")
 
 @shared_task(bind=True)
 def process_images(self, request_id):
@@ -108,11 +117,17 @@ def process_images(self, request_id):
         product_image.output_image_urls = ",".join(output_urls)
         product_image.processed_at = timezone.now()
         product_image.save()
+        product_image.output_image_urls_list = output_urls
 
     # Update the status of the related ImageProcessorRequest
     if failed_flag:
         image_request.status = 'failed'
+        if image_request.webhook_url:
+            send_webhook_notification(image_request.webhook_url, {"request_id": str(image_request.request_id), "status": "failed"})
     else:
         image_request.status = 'completed'
+        if image_request.webhook_url:
+            table_html = render_to_string('image_upload_table.html', {'uploads': product_images})
+            send_webhook_notification(image_request.webhook_url, {"request_id": str(image_request.request_id), "status": "completed", "data": table_html})
     image_request.save()
     logger.info(f"Image processing completed for ID: {request_id}")
